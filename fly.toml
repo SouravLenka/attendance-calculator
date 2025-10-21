@@ -1,0 +1,22 @@
+app = "college-attendance-calculator"
+
+
+[build]
+# If you prefer Docker, set a builder or supply a Dockerfile instead
+image = "python:3.11-slim"
+
+
+[env]
+PORT = "8080"
+
+
+[experimental]
+auto_rollback = true
+
+
+[[services]]
+internal_port = 8080
+protocol = "tcp"
+[[services.ports]]
+handlers = ["http"]
+port = 80
