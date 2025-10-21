@@ -3,6 +3,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import math
+
 
 st.set_page_config(page_title="College Attendance Calculator", layout="centered")
 
