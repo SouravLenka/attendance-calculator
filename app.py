@@ -1,12 +1,23 @@
+import os
+import subprocess
+import sys
 import streamlit as st
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import math
 
+# --- Ensure matplotlib is installed at runtime (for Streamlit Cloud) ---
+try:
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError:
+    with st.spinner("Installing required libraries... ⏳ Please wait a moment"):
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "matplotlib==3.9.2"])
+        import matplotlib.pyplot as plt
+
+# --- Streamlit Page Setup ---
 st.set_page_config(page_title="College Attendance Calculator", layout="centered")
 
-# Simple CSS to control card and colors
+# --- Custom Styling ---
 st.markdown(
     """
     <style>
@@ -28,7 +39,7 @@ with st.form("inputs", clear_on_submit=False):
     target = st.number_input("Target attendance percentage", min_value=1.0, max_value=100.0, value=80.0, format="%.2f")
     submit = st.form_submit_button("Calculate ✅")
 
-# Input validation function
+# --- Validation Function ---
 def validate_inputs(attended: int, total: int, target: float):
     errors = []
     if attended < 0:
@@ -41,7 +52,7 @@ def validate_inputs(attended: int, total: int, target: float):
         errors.append("Target percentage must be between 1 and 100.")
     return errors
 
-# Utility: compute additional classes needed
+# --- Calculate Additional Classes Needed ---
 def additional_classes_needed(attended: int, total: int, target: float) -> int:
     if math.isclose(target, 100.0):
         return 0 if attended == total else -1
@@ -52,13 +63,12 @@ def additional_classes_needed(attended: int, total: int, target: float) -> int:
     x = numerator / denominator
     return 0 if x <= 0 else math.ceil(x)
 
-# Utility: compute how many classes can be missed
+# --- Calculate Classes That Can Be Missed ---
 def classes_can_be_missed(attended: int, total: int, target: float) -> int:
-    # If already above target, find max missed classes before falling below target
     missable = ((100 * attended) - (target * total)) / target
     return math.floor(missable) if missable > 0 else 0
 
-# Perform calculation and show results
+# --- Perform Calculation ---
 if submit:
     errors = validate_inputs(attended, total, target)
     if errors:
@@ -68,7 +78,7 @@ if submit:
         current_pct = (attended / total) * 100.0
         st.metric(label="Current attendance", value=f"{current_pct:.2f}%")
 
-        # --- Case 1: 100% target but not possible ---
+        # --- Case 1: 100% target not achievable ---
         if math.isclose(target, 100.0) and attended < total:
             st.warning("⚠️ Target of 100% is only achievable if you have already attended all conducted classes.")
             st.info("📌 Tip: Speak to your instructor about make-up classes or policies for 100% requirements.")
@@ -76,7 +86,7 @@ if submit:
         else:
             needed = additional_classes_needed(attended, total, target)
 
-            # --- Case 2: attendance already above target ---
+            # --- Case 2: Already above target ---
             if current_pct >= target:
                 st.success(f"✅ Great! Your current attendance ({current_pct:.2f}%) meets or exceeds the target of {target:.2f}%.")
 
@@ -87,21 +97,21 @@ if submit:
                 else:
                     st.info("📊 You cannot afford to miss any more classes if you want to stay above the target.")
 
-            # --- Case 3: below target ---
+            # --- Case 3: Below target ---
             elif needed > 0:
-                st.warning(f"⚠️ You need to attend at least **{needed}** more class{'es' if needed>1 else ''} "
+                st.warning(f"⚠️ You need to attend at least **{needed}** more class{'es' if needed > 1 else ''} "
                            f"to reach {target:.2f}%.")
 
-            # --- Case 4: invalid computation ---
+            # --- Case 4: Invalid computation ---
             elif needed == -1:
                 st.warning("⚠️ Cannot compute with the given inputs (division by zero).")
 
-            # --- Visual progress bar ---
+            # --- Progress Bar ---
             progress_value = min(current_pct / target, 1.0)
             st.write("Progress toward target:")
             st.progress(progress_value)
 
-            # --- Chart visualization ---
+            # --- Chart Visualization ---
             future_attended = attended + max(0, needed)
             future_total = total + max(0, needed)
             future_pct = (future_attended / future_total) * 100.0
@@ -114,9 +124,9 @@ if submit:
             ax.set_title("Attendance vs Target")
             st.pyplot(fig)
 
-            st.info(f"📌 After attending **{max(0, needed)}** more class{'es' if needed>1 else ''}, "
+            st.info(f"📌 After attending **{max(0, needed)}** more class{'es' if needed > 1 else ''}, "
                     f"your attendance would be **{future_pct:.2f}%** (assuming no classes are missed).")
 
-# Footer
+# --- Footer ---
 st.markdown("---")
 st.markdown('<div class="small">By Sourav Lenka</div>', unsafe_allow_html=True)
